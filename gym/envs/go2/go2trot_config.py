@@ -121,11 +121,13 @@ class Go2TrotCfg(LeggedRobotCfg):
     class commands:
         resampling_time = 3.0
         var = 1.0
+        height_noise_std = 0.035
 
         class ranges:
             lin_vel_x = [-1.0, 0.0, 1.0, 3.0]
             lin_vel_y = 1.0  # max [m/s]
             yaw_vel = 3  # max [rad/s]
+            base_height = [0.17, 0.275, 0.38]
 
     class push_robots:
         toggle = True
@@ -167,6 +169,7 @@ class Go2TrotCfg(LeggedRobotCfg):
         soft_dof_vel_limit = 0.9
         soft_torque_limit = 0.9
         max_contact_force = 600.0
+        base_height_tracking_width = 0.10
         base_height_target = 0.9 * BASE_HEIGHT_REF
         tracking_sigma = 0.25
 
@@ -184,6 +187,7 @@ class Go2TrotCfg(LeggedRobotCfg):
         dof_pos_target = [0.5 * x for x in dof_pos]
         tau_ff = 4 * [23.7, 23.7, 45.43]
         commands = [3, 1, 3]
+        height_command = 0.3
 
     class mjspec_attributes:
         njmax = 256
@@ -215,6 +219,7 @@ class Go2TrotRunnerCfg(LeggedRobotRunnerCfg):
             "dof_pos_target",
             "phase_obs",
             "phase_frequency",
+            "height_command",
         ]
         normalize_obs = False
         actions = ["dof_pos_target"]
@@ -246,6 +251,7 @@ class Go2TrotRunnerCfg(LeggedRobotRunnerCfg):
             "dof_pos_target",
             "phase_obs",
             "phase_frequency",
+            "height_command",
         ]
         normalize_obs = False
 
@@ -253,12 +259,13 @@ class Go2TrotRunnerCfg(LeggedRobotRunnerCfg):
             class weights:
                 tracking_lin_vel = 4.0
                 tracking_ang_vel = 2.0
+                tracking_base_height = 4.0
                 lin_vel_z = 0.0
                 ang_vel_xy = 0.01
                 orientation = 1.0
                 torques = 5.0e-6
                 dof_vel = 0.0
-                min_base_height = 0.5
+                min_base_height = 0.0
                 action_rate = 0.25
                 action_rate2 = 0.025
                 stand_still = 0.0
