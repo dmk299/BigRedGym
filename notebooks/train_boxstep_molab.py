@@ -85,21 +85,27 @@ def _(REPO, mo, run_smoke, sh):
 
 @app.cell
 def _(mo):
+    iterations = mo.ui.number(
+        start=10, stop=20000, step=10, value=1500, label="Training iterations"
+    )
+    run_name = mo.ui.text(value="boxstep", label="Run name")
     use_wandb = mo.ui.checkbox(label="Log to Weights & Biases")
     wandb_key = mo.ui.text(kind="password", label="W&B API key (if logging)")
     run_train = mo.ui.run_button(label="3. Start full training (background)")
-    mo.vstack([use_wandb, wandb_key, run_train])
-    return run_train, use_wandb, wandb_key
+    mo.vstack([iterations, run_name, use_wandb, wandb_key, run_train])
+    return iterations, run_name, run_train, use_wandb, wandb_key
 
 
 @app.cell
-def _(REPO, mo, run_train, sh, use_wandb, wandb_key):
+def _(REPO, iterations, mo, run_name, run_train, sh, use_wandb, wandb_key):
     mo.stop(not run_train.value)
-    extra = ""
+    extra = f" --max_iterations {int(iterations.value)}"
+    if run_name.value.strip():
+        extra += f" --run_name {run_name.value.strip()}"
     if use_wandb.value and wandb_key.value:
         sh(f"uv run --frozen wandb login {wandb_key.value}", cwd=REPO)
     else:
-        extra = " --disable_wandb"
+        extra += " --disable_wandb"
     sh(
         "nohup uv run --frozen scripts/train.py --task=go2boxstep "
         f"--device=cuda:0 --headless{extra} > train.log 2>&1 &",
