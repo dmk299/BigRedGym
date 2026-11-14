@@ -421,7 +421,30 @@ class Go2BoxStep(Go2):
         _, active = self._foot_targets_box()
         planted = self.foot_load > self.cfg.reward_settings.contact_load_threshold
         return -torch.mean((active & ~planted).float(), dim=1)
+    def _body_reference_box(self):
+        """Where the base should be now, in the box frame.
 
+        Slides from the move's starting corner to its target corner over the
+        two stepping beats and holds there for the hold beat.
+        """
+        beats = self.cfg.dance.beats_per_move
+        progress = torch.clamp(self.bar_phase * beats / (beats - 1), 0.0, 1.0)
+        old_corner = self._corners[self.move_idx]
+        new_corner = self._corners[torch.remainder(self.move_idx + 1, 4)]
+        return old_corner + progress * (new_corner - old_corner)
+
+    def _reward_body_progress(self):
+        """Dense reward for the body following its path around the box.
+
+        Pays every step, without waiting for a foot to land, so the robot gets
+        feedback while it is still learning to step.
+        """
+        base_rel = self.root_states[:, :2] - self.box_origin
+        base_box = self._rotate(base_rel, -self.box_yaw)
+        err = base_box - self._body_reference_box()
+        sigma = self.cfg.reward_settings.body_progress_sigma
+        return torch.exp(-err.square().sum(dim=1) / sigma**2)
+    
     def _reward_swing_lift(self):
         """Reward the scheduled pair for lifting its feet during its swing beat.
 

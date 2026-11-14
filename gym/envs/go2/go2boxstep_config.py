@@ -78,10 +78,10 @@ class Go2BoxStepCfg(Go2Cfg):
         # Width of the min_base_height score in meters. go2trot's version
         # still paid ~75% at 0.22 m, so the robot crouched; at 0.05 m a
         # crouch to 0.22 m pays ~8%.
-        base_height_sigma = 0.05
+        base_height_sigma = 0.07
         # Elliptical placement score exp(-(dx/sx)^2 - (dy/sy)^2) in the box
         # frame: looser fore-aft to leave foot spacing flexible. Start wide.
-        placement_sigma = [0.15, 0.10]  # [m] fore-aft, lateral
+        placement_sigma = [0.20, 0.15]  # [m] fore-aft, lateral
         heading_sigma = 0.25  # [rad]
         # A foot counts as planted above this share of total body weight.
         # One foot in four-foot stance carries roughly 0.25.
@@ -90,6 +90,7 @@ class Go2BoxStepCfg(Go2Cfg):
         # ground (CPG swing apex is ground_clearance = 0.06 m).
         swing_clearance_target = 0.05  # [m]
         foot_radius = 0.022  # [m] collision sphere, from go2.urdf
+        body_progress_sigma = 0.10  # [m]
         touchdown_min_air_time = 0.1  # [s]; filters chatter and scuffs
         max_touchdowns_per_move = 1  # per leg
 
@@ -156,20 +157,21 @@ class Go2BoxStepRunnerCfg(Go2RunnerCfg):
 
         class reward:
             class weights:
-                foot_placement = 6.0
+                foot_placement = 14.0
+                body_progress = 4.0
                 heading = 1.0
                 # Event penalty: rewards are scaled by dt (0.02 s), so this
                 # costs 0.2 per extra step. Kept light; raise once balance
                 # is reliable.
-                extra_steps = 10.0
+                extra_steps = 5.0
                 foot_slip = 1.0
                 # Only the scheduled pair may leave the ground on each beat.
                 # Kept small: at 2.0 the robot stopped lifting its feet.
                 stance_timing = 0.5
                 # Pays the scheduled pair for lifting during its swing beat.
-                swing_lift = 3.0
-                orientation = 1.0
-                min_base_height = 2.0
+                swing_lift = 5.0
+                orientation = 0.1
+                min_base_height = 1.5
                 torques = 5.0e-6
                 action_rate = 0.02
                 action_rate2 = 0.01
