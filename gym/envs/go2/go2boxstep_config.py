@@ -86,6 +86,10 @@ class Go2BoxStepCfg(Go2Cfg):
         # A foot counts as planted above this share of total body weight.
         # One foot in four-foot stance carries roughly 0.25.
         contact_load_threshold = 0.05
+        # swing_lift pays fully once a swinging foot is this high off the
+        # ground (CPG swing apex is ground_clearance = 0.06 m).
+        swing_clearance_target = 0.05  # [m]
+        foot_radius = 0.022  # [m] collision sphere, from go2.urdf
         touchdown_min_air_time = 0.1  # [s]; filters chatter and scuffs
         max_touchdowns_per_move = 1  # per leg
 
@@ -152,7 +156,7 @@ class Go2BoxStepRunnerCfg(Go2RunnerCfg):
 
         class reward:
             class weights:
-                foot_placement = 4.0
+                foot_placement = 6.0
                 heading = 1.0
                 # Event penalty: rewards are scaled by dt (0.02 s), so this
                 # costs 0.2 per extra step. Kept light; raise once balance
@@ -160,7 +164,10 @@ class Go2BoxStepRunnerCfg(Go2RunnerCfg):
                 extra_steps = 10.0
                 foot_slip = 1.0
                 # Only the scheduled pair may leave the ground on each beat.
-                stance_timing = 2.0
+                # Kept small: at 2.0 the robot stopped lifting its feet.
+                stance_timing = 0.5
+                # Pays the scheduled pair for lifting during its swing beat.
+                swing_lift = 3.0
                 orientation = 1.0
                 min_base_height = 2.0
                 torques = 5.0e-6

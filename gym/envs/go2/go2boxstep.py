@@ -422,6 +422,21 @@ class Go2BoxStep(Go2):
         planted = self.foot_load > self.cfg.reward_settings.contact_load_threshold
         return -torch.mean((active & ~planted).float(), dim=1)
 
+    def _reward_swing_lift(self):
+        """Reward the scheduled pair for lifting its feet during its swing beat.
+
+        Mirror of stance_timing: beat 1 pays the lead pair, beat 2 the trail
+        pair, the hold beat pays nothing. Each swinging foot earns up to 1
+        in proportion to its height off the ground, capped at
+        swing_clearance_target, so a visible lift is needed for full credit.
+        Assumes flat ground at z = 0.
+        """
+        rs = self.cfg.reward_settings
+        _, active = self._foot_targets_box()
+        height = self._rigid_body_pos[:, self.feet_indices, 2] - rs.foot_radius
+        lift = torch.clamp(height / rs.swing_clearance_target, 0.0, 1.0)
+        return torch.mean(lift * (~active).float(), dim=1)
+
     def _reward_foot_slip(self):
         """Penalize horizontal foot speed while the foot is loaded."""
         vel = self._rigid_body_lin_vel[:, self.feet_indices, :2]

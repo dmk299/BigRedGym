@@ -159,3 +159,27 @@ def test_tempo_and_episode_length_fit_two_boxes():
     cfg = Go2BoxStepCfg()
     slowest_box_s = 4 * cfg.dance.beats_per_move * 60.0 / cfg.dance.tempo_bpm_range[0]
     assert cfg.env.episode_length_s >= 2 * slowest_box_s
+
+
+def test_swing_lift_pays_only_the_scheduled_pair():
+    task = _task()
+    task.feet_indices = torch.arange(4)
+    task.move_idx[:] = 1  # move right: right pair (FR, RR) leads
+    task.bar_phase[:] = 0.5 / 3  # beat 1
+    r = task.cfg.reward_settings.foot_radius
+    clear = task.cfg.reward_settings.swing_clearance_target
+
+    def reward(heights):
+        task._rigid_body_pos = torch.zeros(1, 4, 3)
+        task._rigid_body_pos[0, :, 2] = torch.tensor(heights) + r
+        return task._reward_swing_lift().item()
+
+    # Lead (right) pair fully lifted: full credit for 2 of 4 feet.
+    assert reward([0.0, clear, 0.0, clear]) == pytest.approx(0.5)
+    # Half-height lift earns half.
+    assert reward([0.0, clear / 2, 0.0, clear / 2]) == pytest.approx(0.25)
+    # Lifting the wrong (left) pair earns nothing.
+    assert reward([clear, 0.0, clear, 0.0]) == 0.0
+    # Hold beat pays nothing even if a foot is up.
+    task.bar_phase[:] = 2.5 / 3
+    assert reward([clear, clear, clear, clear]) == 0.0
