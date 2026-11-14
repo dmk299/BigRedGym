@@ -399,6 +399,29 @@ class Go2BoxStep(Go2):
         """Penalize touchdowns beyond the allowed count per leg per move."""
         return -torch.sum(self.extra_touchdowns, dim=1)
 
+    def _reward_min_base_height(self):
+        """Squared exponential saturating at the target height.
+
+        Same shape as go2trot's term, but with its width set directly in
+        meters (base_height_sigma) so a crouch is clearly penalized.
+        """
+        rs = self.cfg.reward_settings
+        error = self.base_height.flatten() - rs.base_height_target
+        error = torch.clamp(error, max=0.0)
+        return torch.exp(-(error / rs.base_height_sigma).square())
+
+    def _reward_stance_timing(self):
+        """Penalize feet that are off the ground outside their swing beat.
+
+        Uses the same beat gating as foot_placement: on beat 1 only the lead
+        pair may lift, on beat 2 only the trail pair, and on the hold beat
+        all four feet should be planted. This keeps the two steps of a move
+        distinct instead of overlapping.
+        """
+        _, active = self._foot_targets_box()
+        planted = self.foot_load > self.cfg.reward_settings.contact_load_threshold
+        return -torch.mean((active & ~planted).float(), dim=1)
+
     def _reward_foot_slip(self):
         """Penalize horizontal foot speed while the foot is loaded."""
         vel = self._rigid_body_lin_vel[:, self.feet_indices, :2]

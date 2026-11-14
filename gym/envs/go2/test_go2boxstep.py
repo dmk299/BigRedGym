@@ -123,3 +123,39 @@ def test_dance_clock_advances_moves_and_resets_step_counts():
     task.bar_phase[:] = 0.995
     task._advance_dance_clock()
     assert task.move_idx.item() == 0
+
+
+def test_stance_timing_allows_only_the_scheduled_pair_to_lift():
+    task = _task()
+    task.move_idx[:] = 0  # forward move: left pair (FL, RL) leads
+    planted = 0.25
+    # Beat 1, lead pair airborne, trail planted: correct, no penalty.
+    task.bar_phase[:] = 0.5 / 3
+    task.foot_load = torch.tensor([[0.0, planted, 0.0, planted]])
+    assert task._reward_stance_timing().item() == 0.0
+    # Beat 1, both pairs airborne (two steps at once): trail pair penalized.
+    task.foot_load = torch.zeros(1, 4)
+    assert task._reward_stance_timing().item() == pytest.approx(-0.5)
+    # Beat 2, trail pair airborne, lead planted: correct.
+    task.bar_phase[:] = 1.5 / 3
+    task.foot_load = torch.tensor([[planted, 0.0, planted, 0.0]])
+    assert task._reward_stance_timing().item() == 0.0
+    # Hold beat: any lifted foot is penalized.
+    task.bar_phase[:] = 2.5 / 3
+    task.foot_load = torch.tensor([[planted, planted, planted, 0.0]])
+    assert task._reward_stance_timing().item() == pytest.approx(-0.25)
+
+
+def test_min_base_height_penalizes_a_crouch():
+    task = _task(num_envs=3)
+    task.base_height = torch.tensor([[0.32], [0.28], [0.22]])
+    r = task._reward_min_base_height()
+    assert r[0].item() == 1.0
+    assert r[1].item() == pytest.approx(0.85, abs=0.01)
+    assert r[2].item() < 0.1
+
+
+def test_tempo_and_episode_length_fit_two_boxes():
+    cfg = Go2BoxStepCfg()
+    slowest_box_s = 4 * cfg.dance.beats_per_move * 60.0 / cfg.dance.tempo_bpm_range[0]
+    assert cfg.env.episode_length_s >= 2 * slowest_box_s
