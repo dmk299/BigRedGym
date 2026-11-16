@@ -158,7 +158,7 @@ class Go2BoxStepRunnerCfg(Go2RunnerCfg):
         class reward:
             class weights:
                 foot_placement = 8.0
-                body_progress = 14.0
+                body_progress = 30.0
                 heading = 0.3
                 # Event penalty: rewards are scaled by dt (0.02 s), so this
                 # costs 0.2 per extra step. Kept light; raise once balance
