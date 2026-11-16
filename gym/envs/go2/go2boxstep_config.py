@@ -3,9 +3,9 @@ from gym.envs.go2.go2_config import Go2Cfg, Go2RunnerCfg
 
 class Go2BoxStepCfg(Go2Cfg):
     class env(Go2Cfg.env):
-        # One box = 4 moves x 3 beats. At the slowest sampled tempo (60 bpm)
-        # a box takes 12 s, so 25 s always fits two full boxes.
-        episode_length_s = 25
+        # One box = 4 moves x 3 beats. Revision 1 baseline: 20 s fits two
+        # boxes at 80 bpm. Add-back step 1: 25 s with the 60-70 bpm tempo.
+        episode_length_s = 20
 
     class init_state(Go2Cfg.init_state):
         # Feet directly under the hips at 0.30 m leg height, as in CPG-RL.
@@ -47,7 +47,8 @@ class Go2BoxStepCfg(Go2Cfg):
         # beat (0.86-1.0 s) leaves room for one pair to land before the other
         # lifts. Speed up later by resuming from a checkpoint with a faster
         # range; observation and action sizes do not change.
-        tempo_bpm_range = [60.0, 70.0]
+        # Revision 1 baseline. Add-back step 1: [60.0, 70.0].
+        tempo_bpm_range = [80.0, 90.0]
         beats_per_move = 3
         step_forward = 0.20  # [m] front-back size of the box
         step_side = 0.15  # [m] left-right size of the box
@@ -78,10 +79,12 @@ class Go2BoxStepCfg(Go2Cfg):
         # Width of the min_base_height score in meters. go2trot's version
         # still paid ~75% at 0.22 m, so the robot crouched; at 0.05 m a
         # crouch to 0.22 m pays ~8%.
-        base_height_sigma = 0.07
+        # 0.15 reproduces revision 1 exactly (go2trot's formula).
+        # Add-back step 2: 0.10. Revision 2 used 0.05.
+        base_height_sigma = 0.15
         # Elliptical placement score exp(-(dx/sx)^2 - (dy/sy)^2) in the box
         # frame: looser fore-aft to leave foot spacing flexible. Start wide.
-        placement_sigma = [0.20, 0.15]  # [m] fore-aft, lateral
+        placement_sigma = [0.15, 0.10]  # [m] fore-aft, lateral
         heading_sigma = 0.25  # [rad]
         # A foot counts as planted above this share of total body weight.
         # One foot in four-foot stance carries roughly 0.25.
@@ -90,7 +93,9 @@ class Go2BoxStepCfg(Go2Cfg):
         # ground (CPG swing apex is ground_clearance = 0.06 m).
         swing_clearance_target = 0.05  # [m]
         foot_radius = 0.022  # [m] collision sphere, from go2.urdf
-        body_progress_sigma = 0.10  # [m]
+        # body_progress score width [m]: exp(-(distance / sigma)^2) from the
+        # base to its reference point on the box path.
+        body_progress_sigma = 0.10
         touchdown_min_air_time = 0.1  # [s]; filters chatter and scuffs
         max_touchdowns_per_move = 1  # per leg
 
@@ -157,24 +162,24 @@ class Go2BoxStepRunnerCfg(Go2RunnerCfg):
 
         class reward:
             class weights:
-                foot_placement = 8.0
-                body_progress = 30.0
-                heading = 0.3
+                # ---- Revision 1 baseline (first GPU run: the robot stepped,
+                # but sat low and overlapped its two steps) ----
+                foot_placement = 4.0
+                heading = 1.0
                 # Event penalty: rewards are scaled by dt (0.02 s), so this
-                # costs 0.2 per extra step. Kept light; raise once balance
-                # is reliable.
-                extra_steps = 5.0
+                # costs 0.2 per extra step.
+                extra_steps = 10.0
                 foot_slip = 1.0
-                # Only the scheduled pair may leave the ground on each beat.
-                # Kept small: at 2.0 the robot stopped lifting its feet.
-                stance_timing = 0.5
-                # Pays the scheduled pair for lifting during its swing beat.
-                swing_lift = 5.0
-                orientation = 0.1
-                min_base_height = 0
+                orientation = 1.0
+                min_base_height = 0.5  # add-back step 2: 1.0
                 torques = 5.0e-6
                 action_rate = 0.02
                 action_rate2 = 0.01
+                # ---- Later terms: in the code, switched off. Add back one
+                # at a time, in this order (see box-step notes). ----
+                stance_timing = 0.0  # step 3: 0.25 (rev 2 used 2.0)
+                body_progress = 0.0  # step 4: 1.0-2.0 (rev 4 used 4.0)
+                swing_lift = 0.0  # step 5, only if lift is too low: 1.0
 
             class termination_weight:
                 termination = 0.01
