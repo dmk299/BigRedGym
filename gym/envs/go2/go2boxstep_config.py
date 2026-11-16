@@ -159,7 +159,7 @@ class Go2BoxStepRunnerCfg(Go2RunnerCfg):
             class weights:
                 foot_placement = 14.0
                 body_progress = 4.0
-                heading = 1.0
+                heading = 0.3
                 # Event penalty: rewards are scaled by dt (0.02 s), so this
                 # costs 0.2 per extra step. Kept light; raise once balance
                 # is reliable.
@@ -171,7 +171,7 @@ class Go2BoxStepRunnerCfg(Go2RunnerCfg):
                 # Pays the scheduled pair for lifting during its swing beat.
                 swing_lift = 5.0
                 orientation = 0.1
-                min_base_height = 1.5
+                min_base_height = 0.5
                 torques = 5.0e-6
                 action_rate = 0.02
                 action_rate2 = 0.01
