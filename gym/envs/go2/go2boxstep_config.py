@@ -171,7 +171,7 @@ class Go2BoxStepRunnerCfg(Go2RunnerCfg):
                 extra_steps = 10.0
                 foot_slip = 1.0
                 orientation = 1.0
-                min_base_height = 0.5  # add-back step 2: 1.0
+                min_base_height = 1.0  # add-back step 2: 1.0
                 torques = 5.0e-6
                 action_rate = 0.02
                 action_rate2 = 0.01
