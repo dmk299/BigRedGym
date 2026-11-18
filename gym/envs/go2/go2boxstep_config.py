@@ -177,7 +177,7 @@ class Go2BoxStepRunnerCfg(Go2RunnerCfg):
                 action_rate2 = 0.01
                 # ---- Later terms: in the code, switched off. Add back one
                 # at a time, in this order (see box-step notes). ----
-                stance_timing = 0.0  # step 3: 0.25 (rev 2 used 2.0)
+                stance_timing = 0.25  # step 3: 0.25 (rev 2 used 2.0)
                 body_progress = 0.0  # step 4: 1.0-2.0 (rev 4 used 4.0)
                 swing_lift = 0.0  # step 5, only if lift is too low: 1.0
 
